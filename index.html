@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NY – Firebase сонголт</title>
+  <style>
+    body{font-family:Arial, sans-serif; background:#eef2ff; margin:0; padding:40px; display:flex; justify-content:center;}
+    .container{width:850px; background:#fff; padding:24px; border-radius:12px; box-shadow:0 8px 25px rgba(0,0,0,.1);}
+    h1{margin-top:0;}
+    #nameInput{padding:10px; width:100%; border-radius:8px; border:1px solid #ccc; margin-bottom:12px;}
+    button{padding:10px 18px; border-radius:10px; border:0; cursor:pointer; font-weight:bold;}
+    .yes{background:#ffde23; color:#fff;}
+    .no{background:#e5e7eb; color:#111;}
+    .poster-img{width:100%; height:320px; border-radius:10px; overflow:hidden; background:#ddd; margin-bottom:12px;}
+    .poster-img img{width:100%; height:100%; object-fit:cover;}
+    table{width:100%; margin-top:20px; border-collapse:collapse;}
+    th, td{padding:8px; border-bottom:1px solid #e5e7eb;}
+    .timestamp{font-size:12px; color:#6b7280;}
+    .clear{background:#fffd86; color:#000000; margin-top:12px;}
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>JOIN!</h1>
+  <p>12 сарын 17-18нд найзуудаараа хаус түрээсэлцгээе 😁</p>
+  <input id="nameInput" placeholder="Нэр…" />
+
+  <div class="poster-img">
+    <img id="posterImg" src="https://i.pinimg.com/1200x/81/02/b6/8102b646e6c40fdc763b19b1966147cd.jpg">
+  </div>
+
+  <div style="display:flex; gap:12px;">
+    <button class="yes" id="yesBtn">Тийм эээээ</button>
+    <button class="no" id="noBtn">Үгүй эээээ</button>
+  </div>
+
+  <h3>Админ панель – бүх хэрэглэгчийн сонголт</h3>
+  <table>
+    <thead>
+      <tr><th>Нэр</th><th>Сонголт</th><th>Цаг</th></tr>
+    </thead>
+    <tbody id="historyTable"></tbody>
+  </table>
+
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBoi9A_KfnRKMpfN_8dhBDWV03paumu1QY",
+  authDomain: "ny-choices.firebaseapp.com",
+  databaseURL: "https://ny-choices-default-rtdb.firebaseio.com",
+  projectId: "ny-choices",
+  storageBucket: "ny-choices.firebasestorage.app",
+  messagingSenderId: "855802969186",
+  appId: "1:855802969186:web:1201d6298773c9a775e53b",
+  measurementId: "G-PF580HFS44"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const nameInput = document.getElementById("nameInput");
+  const yesBtn = document.getElementById("yesBtn");
+  const noBtn = document.getElementById("noBtn");
+  const posterImg = document.getElementById("posterImg");
+  const historyTable = document.getElementById("historyTable");
+
+  const IMAGES = {
+    yes: "https://i.pinimg.com/736x/14/5e/58/145e581aee7c58baa3c9de3339b17aee.jpg",
+    no:  "https://i.pinimg.com/736x/5e/e6/8e/5ee68e11cd30f9ffe47ef96da486c01f.jpg"
+  };
+
+  async function sendChoice(name, choice){
+    try{
+      await addDoc(collection(db,"choices"),{
+        name,
+        choice,
+        time: new Date().toISOString()
+      });
+    }catch(e){ console.error(e); }
+  }
+
+  function choose(choice){
+    const name = nameInput.value.trim();
+    if(!name){ alert("Нэрээ оруулна уу"); return; }
+
+    posterImg.src = IMAGES[choice];
+    sendChoice(name, choice);
+  }
+
+  yesBtn.onclick = ()=> choose("yes");
+  noBtn.onclick = ()=> choose("no");
+
+  // Realtime админ panel
+  const q = query(collection(db,"choices"), orderBy("time","desc"));
+  onSnapshot(q, (snapshot)=>{
+    historyTable.innerHTML = "";
+    snapshot.forEach(doc=>{
+      const data = doc.data();
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${data.name}</td><td>${data.choice === "yes" ? "Тийм эээээ" : "Үгүй эээээ"}</td><td>${new Date(data.time).toLocaleString()}</td>`;
+      historyTable.appendChild(tr);
+    });
+  });
+</script>
+
+</body>
+</html>
